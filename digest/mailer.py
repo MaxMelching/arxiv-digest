@@ -5,7 +5,7 @@ import os
 import smtplib
 import ssl
 from email.message import EmailMessage
-from email.utils import formatdate, make_msgid
+from email.utils import formatdate, make_msgid, parseaddr
 
 
 def _env(name: str, default: str = "") -> str:
@@ -49,7 +49,8 @@ def send(subject: str, html: str, text: str) -> None:
     msg["From"] = sender
     msg["To"] = ", ".join(to)
     msg["Date"] = formatdate(localtime=True)
-    msg["Message-ID"] = make_msgid(domain=sender.split("@")[-1])
+    # EMAIL_FROM may be "Display Name <addr@domain>"; take the domain from the address part
+    msg["Message-ID"] = make_msgid(domain=parseaddr(sender)[1].split("@")[-1] or None)
     msg.set_content(text)
     msg.add_alternative(html, subtype="html")
 
