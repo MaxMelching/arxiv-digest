@@ -5,12 +5,27 @@ import os
 import smtplib
 import ssl
 from email.message import EmailMessage
-from email.utils import formatdate, make_msgid, parseaddr
+from email.utils import formataddr, formatdate, make_msgid, parseaddr
 
 
 def _env(name: str, default: str = "") -> str:
     # Secrets pasted into GitHub often carry a trailing newline or spaces
     return (os.environ.get(name) or default).strip()
+
+
+def _sender(raw: str, user: str) -> str:
+    """Build a well-formed From header from EMAIL_FROM.
+
+    Accepts "name@x.com", "Name <name@x.com>", '"Name" <name@x.com>', or just a display
+    name like "arXiv digest" (then SMTP_USER is used as the address).
+    """
+    raw = raw.strip().strip("'")
+    if raw.startswith('"') and raw.endswith('"') and raw.count('"') == 2:
+        raw = raw[1:-1]  # whole value wrapped in quotes
+    name, addr = parseaddr(raw)
+    if "@" not in addr:  # no usable address: treat the whole thing as a display name
+        name, addr = raw.strip('"'), user
+    return formataddr((name, addr)) if name else addr
 
 
 def _mask(addr: str) -> str:
@@ -40,7 +55,7 @@ def send(subject: str, html: str, text: str) -> None:
     if host == "smtp.gmail.com":
         password = password.replace(" ", "")  # app passwords are shown as "abcd efgh ijkl mnop"
     to = [a.strip() for a in _env("EMAIL_TO").split(",") if a.strip()]
-    sender = _env("EMAIL_FROM") or user
+    sender = _sender(_env("EMAIL_FROM"), user)
     if not (user and password and to):
         raise SystemExit("[mail] SMTP_USER, SMTP_PASSWORD and EMAIL_TO must all be set")
 
