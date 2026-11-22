@@ -1,0 +1,83 @@
+name: arXiv digest
+
+on:
+  schedule:
+    # arXiv announces Sun–Thu ~20:00 US Eastern; the feed is complete a few hours later.
+    # 13:17 UTC Mon–Fri = 05:17 PST / 06:17 PDT, so the email is waiting in the morning.
+    - cron: "17 13 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Send even if today's announcement was already sent"
+        type: boolean
+        default: false
+      dry_run:
+        description: "Render only (download the result from the run's artifacts)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: arxiv-digest
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies (CPU-only torch)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+
+      - name: Cache SPECTER model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-allenai-specter-v1
+
+      # Library embeddings + "last sent" state. A new cache entry is saved after every
+      # successful run; the most recent one is restored at the start of the next run.
+      - name: Restore digest state
+        uses: actions/cache@v4
+        with:
+          path: .cache
+          key: digest-state-${{ github.run_id }}
+          restore-keys: digest-state-
+
+      - name: Build and send digest
+        env:
+          ZOTERO_USER_ID: ${{ secrets.ZOTERO_USER_ID }}
+          ZOTERO_API_KEY: ${{ secrets.ZOTERO_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          HF_HUB_DISABLE_TELEMETRY: "1"
+          TOKENIZERS_PARALLELISM: "false"
+        run: |
+          ARGS=""
+          if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          python -m digest $ARGS
+
+      - name: Keep a copy of the rendered digest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ github.run_id }}
+          path: out/
+          if-no-files-found: ignore
+          retention-days: 30

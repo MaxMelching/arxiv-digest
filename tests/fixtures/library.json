@@ -1,0 +1,22 @@
+[
+ {
+  "title": "Ringdown spectroscopy of binary black hole mergers and tests of the no-hair theorem",
+  "abstract": "We analyse quasinormal mode overtones in the ringdown of gravitational-wave signals from binary black hole mergers to test the Kerr hypothesis."
+ },
+ {
+  "title": "Eccentric waveform models for compact binary coalescences",
+  "abstract": "We construct effective-one-body waveforms for eccentric binary black holes calibrated to numerical relativity simulations, for LIGO-Virgo-KAGRA parameter estimation."
+ },
+ {
+  "title": "Bayesian inference of neutron star equation of state from gravitational waves",
+  "abstract": "Tidal deformability measured in binary neutron star inspirals constrains the dense matter equation of state."
+ },
+ {
+  "title": "Stochastic gravitational-wave background from cosmic strings",
+  "abstract": "We compute the stochastic background spectrum from cosmic string loops and forecast sensitivity for pulsar timing arrays and LISA."
+ },
+ {
+  "title": "Extreme mass ratio inspirals and self-force",
+  "abstract": "Gravitational self-force calculations for extreme mass-ratio inspirals into Kerr black holes, relevant for LISA."
+ }
+]

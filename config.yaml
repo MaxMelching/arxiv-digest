@@ -1,0 +1,39 @@
+# arXiv categories to pull (combined into one feed, duplicates removed)
+categories:
+  - gr-qc
+  - astro-ph.HE   # high-energy astrophysics: compact binaries, GW sources, EM counterparts
+  - astro-ph.CO   # cosmology: stochastic background, standard sirens
+  - astro-ph.IM   # instrumentation & methods: detectors, data analysis
+
+# new = first announcement, cross = cross-listed into your categories.
+# Add "replace" / "replace-cross" to also get revised versions.
+announce_types: [new, cross]
+
+zotero:
+  library_type: user       # or "group" (then ZOTERO_USER_ID is the group id)
+  collections: []          # empty = whole library; else collection keys, e.g. ["ABCD1234"]
+
+# Optional free-text interest statements. Each one is treated like an extra
+# "saved paper", which helps if a topic is underrepresented in your library.
+interests: []
+#  - "Waveform modelling of eccentric binary black hole mergers"
+#  - "Tests of general relativity with gravitational-wave ringdown"
+
+model: sentence-transformers/allenai-specter
+
+ranking:
+  top_k: 5                 # score = mean similarity to your k nearest saved papers
+  cutoff:
+    fraction: 0.2          # mark the top 20 % as "likely relevant"...
+    min: 5                 # ...but at least this many
+    max: 25                # ...and at most this many
+    min_score: null        # once calibrated (scores are shown in the email), set e.g. 0.82
+  boosts:                  # added to the score; SPECTER similarities differ by ~0.01–0.05
+    authors: {}            # "Full Name": 0.05   (substring match, so use full names)
+    keywords: {}           # "ringdown": 0.02
+
+email:
+  subject_prefix: "arXiv digest"
+  include_rest: true       # list below-cutoff papers as compact one-liners
+  max_authors: 6
+  show_similar: 2          # how many of your saved papers to show as "Close to:"

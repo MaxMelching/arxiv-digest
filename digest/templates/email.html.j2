@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>{{ subject }}</title>
+<style>
+  body { margin:0; padding:0; background:#f3f3ef; }
+  .w { max-width:700px; margin:0 auto; padding:24px 16px 40px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; color:#1c1c1e; }
+  .h1 { font-size:22px; font-weight:700; margin:0 0 4px; }
+  .meta { font-size:13px; color:#6a6a6a; margin:0; line-height:1.5; }
+  .sec { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#6a6a6a; margin:28px 0 12px; padding-bottom:6px; border-bottom:1px solid #d9d9d3; }
+  .card { background:#ffffff; border:1px solid #e2e2dc; border-radius:8px; padding:16px 18px; margin:0 0 12px; }
+  .top { font-size:12px; color:#6a6a6a; margin:0 0 6px; }
+  .rk { font-weight:700; color:#2b4c7e; margin-right:6px; }
+  .sc { background:#e7edf6; color:#2b4c7e; border-radius:4px; padding:1px 6px; font-weight:600; margin-right:6px; font-family:Menlo,Consolas,monospace; font-size:11px; }
+  .cat { border:1px solid #d4d4ce; border-radius:4px; padding:0 5px; margin-right:4px; color:#555; }
+  .flag { color:#8a5a00; margin-right:6px; }
+  .t { font-size:17px; font-weight:650; line-height:1.3; margin:0 0 6px; }
+  .t a { color:#1c1c1e; text-decoration:none; }
+  .au { font-size:13px; color:#4a4a4a; margin:0 0 8px; line-height:1.4; }
+  .why { font-size:12px; color:#6a6a6a; margin:0 0 10px; line-height:1.45; }
+  .why a { color:#6a6a6a; }
+  .bst { color:#2b6b3f; font-weight:600; }
+  .ab { font-size:14px; line-height:1.55; margin:0 0 10px; color:#2a2a2a; }
+  .lk a { font-size:13px; color:#2b4c7e; margin-right:16px; text-decoration:none; font-weight:600; }
+  .row { padding:8px 2px; border-bottom:1px solid #e4e4de; font-size:13px; line-height:1.4; }
+  .row a { color:#1c1c1e; text-decoration:none; }
+  .row .m { color:#7a7a7a; font-size:12px; }
+  .ft { font-size:11px; color:#8a8a8a; margin-top:28px; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="w">
+  <p class="h1">arXiv digest · {{ day }}</p>
+  <p class="meta">{{ n_total }} papers in {{ categories | join(", ") }} · {{ relevant | length }} likely relevant · ranked against {{ n_library }} items in your library</p>
+
+  <p class="sec">Likely relevant</p>
+  {% for p in relevant %}
+  <div class="card">
+    <p class="top"><span class="rk">#{{ p.rank }}</span><span class="sc">{{ p.score }}</span><span class="cat">{{ p.primary }}</span>{% for c in p.others %}<span class="cat">{{ c }}</span>{% endfor %}{% if p.replaced %} <span class="flag">revised</span>{% endif %}</p>
+    <p class="t"><a href="{{ p.abs_url }}">{{ p.title }}</a></p>
+    <p class="au">{{ p.authors }}</p>
+    {% if p.similar or p.boosts %}
+    <p class="why">
+      {% if p.boosts %}<span class="bst">{{ p.boosts | join(" · ") }}</span>{% if p.similar %}<br>{% endif %}{% endif %}
+      {% if p.similar %}Close to: {% for s in p.similar %}{% if s.url %}<a href="{{ s.url }}">{{ s.title | truncate(90) }}</a>{% else %}{{ s.title | truncate(90) }}{% endif %} ({{ s.sim }}){% if not loop.last %} · {% endif %}{% endfor %}{% endif %}
+    </p>
+    {% endif %}
+    <p class="ab">{{ p.abstract }}</p>
+    <p class="lk" style="margin:0"><a href="{{ p.abs_url }}">abstract</a><a href="{{ p.pdf_url }}">pdf</a><a href="{{ p.html_url }}">html</a></p>
+  </div>
+  {% endfor %}
+
+  {% if include_rest and n_rest %}
+  <p class="sec">Probably not relevant · {{ n_rest }}</p>
+  {% for p in rest %}
+  <div class="row"><span class="m">{{ p.rank }} · {{ p.score }}</span>&nbsp; <a href="{{ p.abs_url }}">{{ p.title }}</a> <span class="m">— {{ p.first_author }} · {{ p.primary }}</span></div>
+  {% endfor %}
+  {% if rest | length < n_rest %}
+  <p class="meta" style="margin-top:12px">… and {{ n_rest - rest | length }} more with lower scores (cut to keep the email under Gmail's size limit; all are in the plain-text version).</p>
+  {% endif %}
+  {% elif n_rest %}
+  <p class="meta" style="margin-top:20px">{{ n_rest }} further papers scored below the cutoff and are not shown.</p>
+  {% endif %}
+
+  <p class="ft">Scores are mean cosine similarity (SPECTER) to your most similar saved papers, plus any configured boosts. Cutoff and boosts live in config.yaml.</p>
+</div>
+</body>
+</html>

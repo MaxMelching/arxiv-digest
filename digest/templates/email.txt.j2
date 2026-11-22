@@ -1,0 +1,27 @@
+arXiv digest · {{ day }}
+{{ n_total }} papers in {{ categories | join(", ") }} · {{ relevant | length }} likely relevant
+
+=== LIKELY RELEVANT ===
+
+{% for p in relevant %}
+#{{ p.rank }} [{{ p.score }}] {{ p.title }}
+{{ p.authors }}
+{{ p.primary }}{% if p.others %} ({{ p.others | join(", ") }}){% endif %} · {{ p.abs_url }}
+{% if p.boosts %}{{ p.boosts | join(" · ") }}
+{% endif %}
+{% if p.similar %}Close to: {% for s in p.similar %}{{ s.title | truncate(70) }} ({{ s.sim }}){% if not loop.last %} · {% endif %}{% endfor %}
+
+{% endif %}
+
+{{ p.abstract | wordwrap(78) }}
+
+------------------------------------------------------------------------------
+{% endfor %}
+{% if include_rest and rest %}
+
+=== PROBABLY NOT RELEVANT ({{ rest | length }}) ===
+
+{% for p in rest %}
+{{ p.rank }}. [{{ p.score }}] {{ p.title }} — {{ p.first_author }} · {{ p.abs_url }}
+{% endfor %}
+{% endif %}
