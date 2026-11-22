@@ -1,5 +1,7 @@
 # arXiv digest
 
+***Note from Max:*** This repository is entirely vibecoded with Claude Opus 5.5. It works well for me personally, which is why I thought I would make it public. But I deserve no credit for any of the code (just the idea) and at the same time won't take responsibility if something goes wrong with it.
+
 A daily email with the new arXiv papers in your categories, ranked by similarity to
 your Zotero library.
 
