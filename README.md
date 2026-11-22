@@ -41,6 +41,10 @@ Zotero web API (your library) ─────┘   (local, no API key)
    | `EMAIL_TO` | where the digest goes (comma-separate several) |
    | `SMTP_HOST`, `SMTP_PORT`, `EMAIL_FROM` | *optional*; defaults are `smtp.gmail.com`, `587`, `SMTP_USER` |
 
+   Leaving `EMAIL_FROM` unset is the safest choice. A display name that looks like an
+   organisation (e.g. "arXiv digest") sent from a personal Gmail address can be flagged as
+   impersonation by Microsoft 365 / Outlook filters and silently quarantined.
+
 5. **First run**: go to *Actions → arXiv digest → Run workflow* and tick **force**
    (needed on weekends, because the latest feed is then older than 36 h). The first run
    takes longer because it downloads the model (~440 MB) and embeds your whole library;
