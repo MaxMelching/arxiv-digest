@@ -44,16 +44,18 @@ jobs:
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
 
-      - name: Cache SPECTER model
-        uses: actions/cache@v4
+      # Caches are restored here and saved explicitly after the digest step, even if
+      # that step fails (actions/cache@v4 alone only saves when the whole job succeeds).
+      - name: Restore SPECTER model
+        id: hf-cache
+        uses: actions/cache/restore@v4
         with:
           path: ~/.cache/huggingface
           key: hf-allenai-specter-v1
 
-      # Library embeddings + "last sent" state. A new cache entry is saved after every
-      # successful run; the most recent one is restored at the start of the next run.
+      # Library embeddings + "last sent" state; the newest entry is restored.
       - name: Restore digest state
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: .cache
           key: digest-state-${{ github.run_id }}
@@ -77,6 +79,20 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
           if [ "${{ inputs.sample_feed }}" = "true" ]; then ARGS="$ARGS --feed-file tests/fixtures/sample_feed.xml --force"; fi
           python -m digest $ARGS
+
+      - name: Save SPECTER model
+        if: always() && steps.hf-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-allenai-specter-v1
+
+      - name: Save digest state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .cache
+          key: digest-state-${{ github.run_id }}
 
       - name: Keep a copy of the rendered digest
         if: always()
