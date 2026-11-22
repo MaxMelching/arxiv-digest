@@ -95,6 +95,8 @@ def main(argv: list[str] | None = None) -> int:
 
     # 4. Render + send
     subject, html, text = render(relevant, rest, ann.date, cfg, n_library=len(lib))
+    if args.feed_file:
+        subject = f"[TEST] {subject}"
     (out / "digest.html").write_text(html, encoding="utf-8")
     (out / "digest.txt").write_text(text, encoding="utf-8")
     print(f"[render] {subject!r} ({len(html.encode()) / 1024:.0f} KB html) -> {out}/")
@@ -106,6 +108,8 @@ def main(argv: list[str] | None = None) -> int:
     from .mailer import send
 
     send(subject, html, text)
+    if args.feed_file:  # test runs must not mark a real announcement as sent
+        return 0
     cache.mkdir(parents=True, exist_ok=True)
     state.update(last_sent=stamp, sent_at=datetime.now(timezone.utc).isoformat())
     state_file.write_text(json.dumps(state, indent=2))

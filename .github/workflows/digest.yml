@@ -15,6 +15,10 @@ on:
         description: "Render only (download the result from the run's artifacts)"
         type: boolean
         default: false
+      sample_feed:
+        description: "Test run: use the bundled sample feed (works on weekends; subject marked [TEST])"
+        type: boolean
+        default: false
 
 concurrency:
   group: arxiv-digest
@@ -71,6 +75,7 @@ jobs:
           ARGS=""
           if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ "${{ inputs.sample_feed }}" = "true" ]; then ARGS="$ARGS --feed-file tests/fixtures/sample_feed.xml --force"; fi
           python -m digest $ARGS
 
       - name: Keep a copy of the rendered digest
