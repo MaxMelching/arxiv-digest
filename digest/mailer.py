@@ -8,13 +8,41 @@ from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
 
 
+def _env(name: str, default: str = "") -> str:
+    # Secrets pasted into GitHub often carry a trailing newline or spaces
+    return (os.environ.get(name) or default).strip()
+
+
+def _mask(addr: str) -> str:
+    local, _, domain = addr.partition("@")
+    return f"{local[:2]}***@{domain}" if domain else f"{addr[:2]}***"
+
+
+def _diagnose(host: str, port: int, user: str, password: str, s: smtplib.SMTP | None, err: Exception) -> None:
+    """Print what can be checked without ever printing the password."""
+    print("[mail] login failed:", type(err).__name__, err)
+    print(f"[mail]   server        : {host}:{port} ({'SSL' if port == 465 else 'STARTTLS'})")
+    print(f"[mail]   user          : {_mask(user)}  (looks like an email address: {'@' in user})")
+    print(f"[mail]   password      : {len(password)} chars, ascii-only: {password.isascii()}, "
+          f"contains spaces: {' ' in password}")
+    if host == "smtp.gmail.com":
+        print("[mail]   gmail expects : full address as user, a 16-letter app password "
+              "(2-Step Verification must be on), not your normal password")
+    if s is not None and getattr(s, "esmtp_features", None):
+        print(f"[mail]   server offers : AUTH {s.esmtp_features.get('auth', '(none)')}")
+
+
 def send(subject: str, html: str, text: str) -> None:
-    host = os.environ.get("SMTP_HOST") or "smtp.gmail.com"
-    port = int(os.environ.get("SMTP_PORT") or 587)
-    user = os.environ["SMTP_USER"]
-    password = os.environ["SMTP_PASSWORD"]
-    to = [a.strip() for a in os.environ["EMAIL_TO"].split(",") if a.strip()]
-    sender = os.environ.get("EMAIL_FROM") or user
+    host = _env("SMTP_HOST", "smtp.gmail.com")
+    port = int(_env("SMTP_PORT", "587"))
+    user = _env("SMTP_USER")
+    password = _env("SMTP_PASSWORD")
+    if host == "smtp.gmail.com":
+        password = password.replace(" ", "")  # app passwords are shown as "abcd efgh ijkl mnop"
+    to = [a.strip() for a in _env("EMAIL_TO").split(",") if a.strip()]
+    sender = _env("EMAIL_FROM") or user
+    if not (user and password and to):
+        raise SystemExit("[mail] SMTP_USER, SMTP_PASSWORD and EMAIL_TO must all be set")
 
     msg = EmailMessage()
     msg["Subject"] = subject
@@ -26,13 +54,24 @@ def send(subject: str, html: str, text: str) -> None:
     msg.add_alternative(html, subtype="html")
 
     ctx = ssl.create_default_context()
-    if port == 465:
-        with smtplib.SMTP_SSL(host, port, context=ctx, timeout=60) as s:
-            s.login(user, password)
-            s.send_message(msg)
-    else:
-        with smtplib.SMTP(host, port, timeout=60) as s:
+    s: smtplib.SMTP | None = None
+    try:
+        if port == 465:
+            s = smtplib.SMTP_SSL(host, port, context=ctx, timeout=60)
+        else:
+            s = smtplib.SMTP(host, port, timeout=60)
+            s.ehlo()
             s.starttls(context=ctx)
-            s.login(user, password)
-            s.send_message(msg)
+        s.ehlo()
+        s.login(user, password)
+    except (smtplib.SMTPException, OSError) as e:
+        _diagnose(host, port, user, password, s, e)
+        raise
+    try:
+        s.send_message(msg)
+    finally:
+        try:
+            s.quit()
+        except smtplib.SMTPException:
+            pass
     print(f"[mail] sent to {len(to)} recipient(s) via {host}:{port}")
