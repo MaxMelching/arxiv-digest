@@ -3,8 +3,12 @@ name: arXiv digest
 on:
   schedule:
     # arXiv announces Sun–Thu ~20:00 US Eastern; the feed is complete a few hours later.
-    # 13:17 UTC Mon–Fri = 05:17 PST / 06:17 PDT, so the email is waiting in the morning.
+    # GitHub's scheduler can delay or drop runs, so there are three slots. The first run
+    # that gets through sends the digest; later ones see it was already sent and exit.
+    # 13:17 / 15:47 / 18:23 UTC = 05:17 / 07:47 / 10:23 PST.
     - cron: "17 13 * * 1-5"
+    - cron: "47 15 * * 1-5"
+    - cron: "23 18 * * 1-5"
   workflow_dispatch:
     inputs:
       force:
